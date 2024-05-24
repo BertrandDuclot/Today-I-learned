@@ -23,8 +23,7 @@ const initialFacts = [
   {
     id: 2,
     text: "Millennial dads spend 3 times as much time with their kids than their fathers spent with them. In 1982, 43% of fathers had never changed a diaper. Today, that number is down to 3%",
-    source:
-      "https://www.mother.ly/parenting/millennial-dads-spend-more-time-with-their-kids",
+    source: "https://www.mother.ly/parenting/millennial-dads-spend-more-time-with-their-kids",
     category: "society",
     votesInteresting: 11,
     votesMindblowing: 2,
