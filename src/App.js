@@ -1,15 +1,5 @@
 import "./style.css";
-
-const CATEGORIES = [
-  { name: "technology", color: "#3b82f6" },
-  { name: "science", color: "#16a34a" },
-  { name: "finance", color: "#ef4444" },
-  { name: "society", color: "#eab308" },
-  { name: "entertainment", color: "#db2777" },
-  { name: "health", color: "#14b8a6" },
-  { name: "history", color: "#f97316" },
-  { name: "news", color: "#8b5cf6" },
-];
+import { useState } from "react";
 
 const initialFacts = [
   {
@@ -44,22 +34,26 @@ const initialFacts = [
   },
 ];
 
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <span style={{ fontSize: "40px" }}>{count}</span>
+      <button className="btn btn-large" onClick={() => setCount((c) => c + 1)}>
+        +1
+      </button>
+    </div>
+  );
+}
+
 function App() {
-  const appTitle = "Today I learned";
+  const [showForm, setShowForm] = useState(false);
 
   return (
     <>
-      {/* HEADER */}
-      <header className="header">
-        <div className="logo">
-          <img src="logo.png" height="68" width="68" alt="Today I Learned Logo" />
-          <h1>{appTitle}</h1>
-        </div>
-
-        <button className="btn btn-large btn-open">Share a fact</button>
-      </header>
-
-      <NewFactForm />
+      <Header showForm={showForm} setShowForm={setShowForm} />
+      {showForm ? <NewFactForm /> : null}
 
       <main className="main">
         <CategoryFilter />
@@ -69,12 +63,56 @@ function App() {
   );
 }
 
+function Header({ showForm, setShowForm }) {
+  const appTitle = "Today I learned";
+
+  return (
+    <header className="header">
+      <div className="logo">
+        <img src="logo.png" height="68" width="68" alt="Today I Learned Logo" />
+        <h1>{appTitle}</h1>
+      </div>
+
+      <button className="btn btn-large btn-open" onClick={() => setShowForm((show) => !show)}>
+        {showForm ? "Close" : "Share a fact"}
+      </button>
+    </header>
+  );
+}
+
 function NewFactForm() {
   return <form className="fact-form">Fact form</form>;
 }
 
+const CATEGORIES = [
+  { name: "technology", color: "#3b82f6" },
+  { name: "science", color: "#16a34a" },
+  { name: "finance", color: "#ef4444" },
+  { name: "society", color: "#eab308" },
+  { name: "entertainment", color: "#db2777" },
+  { name: "health", color: "#14b8a6" },
+  { name: "history", color: "#f97316" },
+  { name: "news", color: "#8b5cf6" },
+];
+
 function CategoryFilter() {
-  return <aside>Category filter</aside>;
+  return (
+    <aside>
+      <ul>
+        <li className="category">
+          <button className="btn btn-all-categories">All</button>
+        </li>
+
+        {CATEGORIES.map((cat) => (
+          <li key={cat.name} className="category">
+            <button className="btn btn-category" style={{ backgroundColor: cat.color }}>
+              {cat.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
 }
 
 function FactList() {
@@ -93,7 +131,7 @@ function FactList() {
   );
 }
 
-function Fact({ fact, test }) {
+function Fact({ fact }) {
   return (
     <li className="fact">
       <p>
