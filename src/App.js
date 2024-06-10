@@ -1,5 +1,6 @@
 import "./style.css";
-import { useState } from "react";
+import supabase from "./supabase";
+import { useEffect, useState } from "react";
 
 const initialFacts = [
   {
@@ -49,18 +50,39 @@ function Counter() {
 
 function App() {
   const [showForm, setShowForm] = useState(false);
+  const [facts, setFacts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(function () {
+    async function getFacts() {
+      setIsLoading(true);
+      const { data: facts, error } = await supabase.from("facts").select("*").order("votesInteresting", { ascending: false }).limit(100);
+
+      console.log(error);
+
+      if (!error) setFacts(facts);
+      else alert("There was a problem with data");
+      setIsLoading(false);
+    }
+    getFacts();
+  }, []);
 
   return (
     <>
       <Header showForm={showForm} setShowForm={setShowForm} />
-      {showForm ? <NewFactForm /> : null}
+      {showForm ? <NewFactForm setFacts={setFacts} setShowForm={setShowForm} /> : null}
 
       <main className="main">
         <CategoryFilter />
-        <FactList />
+
+        {isLoading ? <Loader /> : <FactList facts={facts} />}
       </main>
     </>
   );
+}
+
+function Loader() {
+  return <p className="message">Loading...</p>;
 }
 
 function Header({ showForm, setShowForm }) {
@@ -91,14 +113,47 @@ const CATEGORIES = [
   { name: "news", color: "#8b5cf6" },
 ];
 
-function NewFactForm() {
+function isValidHttpUrl(string) {
+  let url;
+
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
+function NewFactForm({ setFacts, setShowForm }) {
   const [text, setText] = useState("");
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState("http://example.com");
   const [category, setCategory] = useState("");
   const textLength = text.length;
 
   function handleSubmit(e) {
     e.preventDefault();
+
+    if (text && isValidHttpUrl(source) && category && textLength <= 200) {
+      const newFact = {
+        id: Math.round(Math.random() * 10000000),
+        text,
+        source,
+        category,
+        votesInteresting: 24,
+        votesMindblowing: 9,
+        votesFalse: 4,
+        createdIn: new Date().getFullYear(),
+      };
+
+      setFacts((facts) => [newFact, ...facts]);
+
+      setText("");
+      setSource("");
+      setCategory("");
+
+      setShowForm(false);
+    }
   }
 
   return (
@@ -140,9 +195,8 @@ function CategoryFilter() {
   );
 }
 
-function FactList() {
+function FactList({ facts }) {
   // Temporary
-  const facts = initialFacts;
 
   return (
     <section>
