@@ -52,20 +52,29 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [facts, setFacts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState("all");
 
-  useEffect(function () {
-    async function getFacts() {
-      setIsLoading(true);
-      const { data: facts, error } = await supabase.from("facts").select("*").order("votesInteresting", { ascending: false }).limit(100);
+  useEffect(
+    function () {
+      async function getFacts() {
+        setIsLoading(true);
 
-      console.log(error);
+        let query = supabase.from("facts").select("*");
 
-      if (!error) setFacts(facts);
-      else alert("There was a problem with data");
-      setIsLoading(false);
-    }
-    getFacts();
-  }, []);
+        if (currentCategory !== "all") query = query.eq("category", currentCategory);
+
+        const { data: facts, error } = await query.order("votesInteresting", { ascending: false }).limit(1000);
+
+        //console.log(error);
+
+        if (!error) setFacts(facts);
+        else alert("There was a problem with data");
+        setIsLoading(false);
+      }
+      getFacts();
+    },
+    [currentCategory]
+  );
 
   return (
     <>
@@ -73,7 +82,7 @@ function App() {
       {showForm ? <NewFactForm setFacts={setFacts} setShowForm={setShowForm} /> : null}
 
       <main className="main">
-        <CategoryFilter />
+        <CategoryFilter setCurrentCategory={setCurrentCategory} />
 
         {isLoading ? <Loader /> : <FactList facts={facts} />}
       </main>
@@ -129,13 +138,14 @@ function NewFactForm({ setFacts, setShowForm }) {
   const [text, setText] = useState("");
   const [source, setSource] = useState("http://example.com");
   const [category, setCategory] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const textLength = text.length;
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (text && isValidHttpUrl(source) && category && textLength <= 200) {
-      const newFact = {
+      /*const newFact = {
         id: Math.round(Math.random() * 10000000),
         text,
         source,
@@ -144,9 +154,15 @@ function NewFactForm({ setFacts, setShowForm }) {
         votesMindblowing: 9,
         votesFalse: 4,
         createdIn: new Date().getFullYear(),
-      };
+      };*/
 
-      setFacts((facts) => [newFact, ...facts]);
+      setIsUploading(true);
+      const { data: newFact } = await supabase.from("facts").insert([{ text, source, category }]).select();
+      console.log(newFact);
+
+      setIsUploading(false);
+
+      setFacts((facts) => [newFact[0], ...facts]);
 
       setText("");
       setSource("");
@@ -159,10 +175,10 @@ function NewFactForm({ setFacts, setShowForm }) {
   return (
     <form className="fact-form" onSubmit={handleSubmit}>
       {" "}
-      <input type="text" placeholder="Share a fact with the world..." value={text} onChange={(e) => setText(e.target.value)} />
+      <input type="text" placeholder="Share a fact with the world..." value={text} onChange={(e) => setText(e.target.value)} disabled={isUploading} />
       <span>{200 - textLength}</span>
       <input value={source} type="text" placeholder="Trustworthy source..." onChange={(e) => setSource(e.target.value)} />
-      <select value={category} onChange={(e) => setCategory(e.target.value)}>
+      <select value={category} onChange={(e) => setCategory(e.target.value)} disabled={isUploading}>
         <option value="">Choose category:</option>
         {CATEGORIES.map((cat) => (
           <option key={cat.name} value={cat.name}>
@@ -170,22 +186,26 @@ function NewFactForm({ setFacts, setShowForm }) {
           </option>
         ))}
       </select>
-      <button className="btn btn-large">Post</button>
+      <button className="btn btn-large" disabled={isUploading}>
+        Post
+      </button>
     </form>
   );
 }
 
-function CategoryFilter() {
+function CategoryFilter({ setCurrentCategory }) {
   return (
     <aside>
       <ul>
         <li className="category">
-          <button className="btn btn-all-categories">All</button>
+          <button className="btn btn-all-categories" onClick={() => setCurrentCategory("all")}>
+            All
+          </button>
         </li>
 
         {CATEGORIES.map((cat) => (
           <li key={cat.name} className="category">
-            <button className="btn btn-category" style={{ backgroundColor: cat.color }}>
+            <button className="btn btn-category" style={{ backgroundColor: cat.color }} onClick={() => setCurrentCategory(cat.name)}>
               {cat.name}
             </button>
           </li>
@@ -196,7 +216,9 @@ function CategoryFilter() {
 }
 
 function FactList({ facts }) {
-  // Temporary
+  if (facts.length === 0) {
+    return <p className="message">No facts for this category yet. Create the first one.</p>;
+  }
 
   return (
     <section>
